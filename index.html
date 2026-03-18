@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дрон-инспектор нефтепровода</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a2f3f, #0e1a26);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .drone-area {
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            min-height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            border: 2px dashed rgba(78, 205, 196, 0.3);
+        }
+        
+        .drone-area:active {
+            transform: scale(0.98);
+        }
+        
+        .drone {
+            font-size: 80px;
+            transition: all 0.2s;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
+            animation: fly 3s infinite ease-in-out;
+        }
+        
+        @keyframes fly {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        
+        .pipeline {
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #888, #ddd, #888);
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            border-radius: 2px;
+        }
+        
+        .pipeline::before {
+            content: "⚡";
+            position: absolute;
+            left: 10px;
+            top: -15px;
+            font-size: 12px;
+            opacity: 0.5;
+        }
+        
+        .pipeline::after {
+            content: "⚡";
+            position: absolute;
+            right: 10px;
+            top: -15px;
+            font-size: 12px;
+            opacity: 0.5;
+        }
+        
+        .upgrades {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .upgrade-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .upgrade-btn:hover {
+            background: rgba(78, 205, 196, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .upgrade-btn:active {
+            transform: translateY(0);
+        }
+        
+        .upgrade-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .upgrade-cost {
+            font-size: 12px;
+            color: #4ecdc4;
+            margin-top: 5px;
+        }
+        
+        .upgrade-level {
+            font-size: 10px;
+            opacity: 0.6;
+        }
+        
+        .message {
+            text-align: center;
+            color: #4ecdc4;
+            font-size: 14px;
+            min-height: 20px;
+            margin-top: 10px;
+        }
+        
+        .reset-btn {
+            background: rgba(255,87,87,0.3);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            float: right;
+        }
+        
+        .reset-btn:hover {
+            background: rgba(255,87,87,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🚁 Инспектор нефтепровода</h1>
+            <p style="font-size: 14px; opacity: 0.8;">Собирай данные с дрона</p>
+            <button class="reset-btn" onclick="resetGame()">🔄 Новая миссия</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="dataPoints">0</div>
+                <div class="stat-label">📊 Данных</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="dataPerClick">1</div>
+                <div class="stat-label">📈 За полёт</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="autoData">0</div>
+                <div class="stat-label">⚡ Авто/сек</div>
+            </div>
+        </div>
+        
+        <div class="drone-area" onclick="handleClick()">
+            <div class="drone" id="drone">🚁</div>
+            <div class="pipeline"></div>
+        </div>
+        
+        <div class="upgrades">
+            <div class="upgrade-btn" onclick="buyUpgrade('sensor')" id="sensorUpgrade">
+                📡 Сенсор
+                <div class="upgrade-cost" id="sensorCost">10 📊</div>
+                <div class="upgrade-level" id="sensorLevel">Ур. 0</div>
+            </div>
+            
+            <div class="upgrade-btn" onclick="buyUpgrade('battery')" id="batteryUpgrade">
+                🔋 Батарея
+                <div class="upgrade-cost" id="batteryCost">25 📊</div>
+                <div class="upgrade-level" id="batteryLevel">Ур. 0</div>
+            </div>
+            
+            <div class="upgrade-btn" onclick="buyUpgrade('camera')" id="cameraUpgrade">
+                📸 Камера
+                <div class="upgrade-cost" id="cameraCost">50 📊</div>
+                <div class="upgrade-level" id="cameraLevel">Ур. 0</div>
+            </div>
+            
+            <div class="upgrade-btn" onclick="buyUpgrade('ai')" id="aiUpgrade">
+                🧠 Нейросеть
+                <div class="upgrade-cost" id="aiCost">100 📊</div>
+                <div class="upgrade-level" id="aiLevel">Ур. 0</div>
+            </div>
+        </div>
+        
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        // Состояние игры
+        let gameState = {
+            dataPoints: 0,
+            sensorLevel: 0,
+            batteryLevel: 0,
+            cameraLevel: 0,
+            aiLevel: 0
+        };
+        
+        // Цены апгрейдов
+        const costs = {
+            sensor: 10,
+            battery: 25,
+            camera: 50,
+            ai: 100
+        };
+        
+        // Множители цены
+        function getCost(type) {
+            let level;
+            switch(type) {
+                case 'sensor': level = gameState.sensorLevel; break;
+                case 'battery': level = gameState.batteryLevel; break;
+                case 'camera': level = gameState.cameraLevel; break;
+                case 'ai': level = gameState.aiLevel; break;
+            }
+            return Math.floor(costs[type] * Math.pow(1.5, level));
+        }
+        
+        // Обновление интерфейса
+        function updateUI() {
+            document.getElementById('dataPoints').textContent = gameState.dataPoints;
+            document.getElementById('dataPerClick').textContent = getDataPerClick();
+            document.getElementById('autoData').textContent = getAutoData();
+            
+            // Обновляем цены и уровни
+            document.getElementById('sensorCost').textContent = getCost('sensor') + ' 📊';
+            document.getElementById('sensorLevel').textContent = 'Ур. ' + gameState.sensorLevel;
+            
+            document.getElementById('batteryCost').textContent = getCost('battery') + ' 📊';
+            document.getElementById('batteryLevel').textContent = 'Ур. ' + gameState.batteryLevel;
+            
+            document.getElementById('cameraCost').textContent = getCost('camera') + ' 📊';
+            document.getElementById('cameraLevel').textContent = 'Ур. ' + gameState.cameraLevel;
+            
+            document.getElementById('aiCost').textContent = getCost('ai') + ' 📊';
+            document.getElementById('aiLevel').textContent = 'Ур. ' + gameState.aiLevel;
+            
+            // Подсветка дрона при улучшении
+            updateDroneStyle();
+        }
+        
+        // Данных за клик
+        function getDataPerClick() {
+            return 1 + gameState.sensorLevel * 2;
+        }
+        
+        // Автоматических данных в секунду
+        function getAutoData() {
+            return gameState.batteryLevel * 1 + gameState.cameraLevel * 2 + gameState.aiLevel * 5;
+        }
+        
+        // Стиль дрона
+        function updateDroneStyle() {
+            const drone = document.getElementById('drone');
+            if (gameState.aiLevel > 0) {
+                drone.style.filter = 'drop-shadow(0 0 10px #4ecdc4)';
+            } else if (gameState.cameraLevel > 0) {
+                drone.style.filter = 'drop-shadow(0 0 10px #ffd93d)';
+            } else {
+                drone.style.filter = 'drop-shadow(0 10px 10px rgba(0,0,0,0.3))';
+            }
+        }
+        
+        // Обработка клика
+        function handleClick() {
+            gameState.dataPoints += getDataPerClick();
+            updateUI();
+            
+            // Анимация
+            const drone = document.getElementById('drone');
+            drone.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                drone.style.transform = 'scale(1)';
+            }, 100);
+            
+            showMessage('+ ' + getDataPerClick() + ' 📊');
+        }
+        
+        // Покупка улучшения
+        function buyUpgrade(type) {
+            const cost = getCost(type);
+            
+            if (gameState.dataPoints >= cost) {
+                gameState.dataPoints -= cost;
+                
+                switch(type) {
+                    case 'sensor':
+                        gameState.sensorLevel++;
+                        break;
+                    case 'battery':
+                        gameState.batteryLevel++;
+                        break;
+                    case 'camera':
+                        gameState.cameraLevel++;
+                        break;
+                    case 'ai':
+                        gameState.aiLevel++;
+                        break;
+                }
+                
+                updateUI();
+                showMessage('✅ Улучшение куплено!');
+            } else {
+                showMessage('❌ Не хватает данных!');
+            }
+        }
+        
+        // Автоматический сбор данных
+        setInterval(() => {
+            if (getAutoData() > 0) {
+                gameState.dataPoints += getAutoData();
+                updateUI();
+                
+                // Мигание дрона
+                const drone = document.getElementById('drone');
+                drone.style.opacity = '0.8';
+                setTimeout(() => {
+                    drone.style.opacity = '1';
+                }, 100);
+            }
+        }, 1000);
+        
+        // Сообщение
+        function showMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.style.opacity = '1';
+            setTimeout(() => {
+                msg.style.opacity = '0';
+            }, 1000);
+        }
+        
+        // Сброс игры
+        function resetGame() {
+            gameState = {
+                dataPoints: 0,
+                sensorLevel: 0,
+                batteryLevel: 0,
+                cameraLevel: 0,
+                aiLevel: 0
+            };
+            updateUI();
+            showMessage('🔄 Новая миссия начата!');
+        }
+        
+        // Сохранение в localStorage
+        setInterval(() => {
+            localStorage.setItem('droneGame', JSON.stringify(gameState));
+        }, 5000);
+        
+        // Загрузка из localStorage
+        window.onload = () => {
+            const saved = localStorage.getItem('droneGame');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                updateUI();
+            }
+        };
+        
+        // Инициализация
+        updateUI();
+    </script>
+</body>
+</html>
